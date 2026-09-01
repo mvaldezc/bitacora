@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitácora de entrenamiento</title>
+<meta name="description" content="Registro de fuerza y carrera">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16272E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bitácora">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" href="icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fondo:#16272E; --superficie:#1E343D; --superficie-alta:#27424D; --linea:#33525E;
+    --texto:#E9F0EC; --texto-suave:#A9BEC5;
+    --fuerza:#E8B84B; --carrera:#5FC3B0; --descanso:#7E959E; --hecho:#7ED6A5; --alerta:#F0906B;
+    --display:"Barlow Condensed", system-ui, -apple-system, sans-serif;
+    --cuerpo:"Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --toque:44px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--fondo); color:var(--texto); font-family:var(--cuerpo);
+    font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    padding:0 0 110px;
+  }
+  .envoltorio{max-width:660px;margin:0 auto;padding:0 16px;}
+
+  /* ---------- Encabezado ---------- */
+  header{padding:24px 0 10px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--texto-suave);margin:0 0 6px;}
+  h1{font-family:var(--display);font-weight:700;font-size:33px;line-height:1;letter-spacing:-.01em;text-transform:uppercase;margin:0;}
+
+  /* ---------- Navegación de fecha ---------- */
+  .nav-fecha{display:flex;align-items:center;gap:8px;margin:16px 0 10px;}
+  .nav-fecha button{
+    min-width:var(--toque);height:var(--toque);border-radius:10px;cursor:pointer;
+    background:var(--superficie);border:1px solid var(--linea);color:var(--texto);
+    font-family:var(--mono);font-size:16px;
+  }
+  .nav-fecha .actual{
+    flex:1;text-align:center;font-family:var(--display);text-transform:uppercase;
+    font-size:19px;letter-spacing:.02em;line-height:1.15;
+  }
+  .nav-fecha .actual small{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--texto-suave);text-transform:uppercase;}
+  #btn-hoy{padding:0 12px;font-family:var(--display);font-size:15px;text-transform:uppercase;letter-spacing:.05em;}
+
+  /* ---------- Franja de la semana ---------- */
+  .franja{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;}
+  .dia{
+    background:var(--superficie);border:1px solid transparent;border-radius:9px;
+    padding:7px 2px 6px;cursor:pointer;font-family:inherit;color:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:4px;min-height:var(--toque);
+  }
+  .dia .inicial{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--texto-suave);text-transform:uppercase;}
+  .dia .numero{font-family:var(--display);font-size:17px;line-height:1;}
+  .barras{display:flex;gap:2px;height:5px;align-items:center;}
+  .barra{width:9px;height:4px;border-radius:2px;}
+  .barra.fuerza{background:var(--fuerza);} .barra.carrera{background:var(--carrera);}
+  .barra.descanso{background:var(--descanso);opacity:.4;width:14px;}
+  .barra.ok{box-shadow:0 0 0 1.5px var(--hecho);}
+  .dia[aria-pressed="true"]{border-color:var(--texto);background:var(--superficie-alta);}
+  .dia.hoy .numero{color:var(--carrera);font-weight:700;}
+  .leyenda{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--texto-suave);text-transform:uppercase;padding-bottom:16px;border-bottom:1px solid var(--linea);}
+  .punto{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;}
+
+  /* ---------- Tarjetas ---------- */
+  .ctrl-semana{
+    display:flex;align-items:center;gap:10px;justify-content:space-between;
+    padding:12px 0 2px;font-size:13.5px;color:var(--texto-suave);
+  }
+  .ctrl-semana button{
+    min-height:38px;padding:0 13px;border-radius:9px;cursor:pointer;white-space:nowrap;
+    background:var(--superficie);border:1px solid var(--linea);color:var(--texto-suave);
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  }
+  .ctrl-semana button[aria-pressed="true"]{background:rgba(232,184,75,.14);border-color:var(--fuerza);color:var(--fuerza);}
+
+  .tarjeta{background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:15px 14px 14px;margin-top:14px;}
+  .tarjeta.correr{border-color:rgba(95,195,176,.45);}
+  .tarjeta.pesas{border-color:rgba(232,184,75,.4);}
+  .tarjeta-cab{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;}
+  .tipo.pesas{color:var(--fuerza);} .tipo.correr{color:var(--carrera);}
+  .contador{font-family:var(--mono);font-size:11px;color:var(--texto-suave);}
+  h2{font-family:var(--display);font-weight:600;text-transform:uppercase;font-size:25px;line-height:1.1;margin:3px 0 12px;}
+
+  /* ---------- Ejercicio como tarjeta ---------- */
+  .ej{border-top:1px solid rgba(51,82,94,.6);padding:13px 0 4px;}
+  .ej:first-of-type{border-top:0;}
+  .ej-nombre{font-size:16px;line-height:1.25;}
+  .ej-pres{font-family:var(--mono);font-size:11.5px;color:var(--texto-suave);margin-left:6px;white-space:nowrap;}
+  .ej-nota{display:block;font-size:12.5px;color:var(--texto-suave);margin-top:2px;}
+  .ej-previo{display:block;font-family:var(--mono);font-size:11.5px;color:var(--fuerza);opacity:.9;margin-top:4px;}
+  .ej-guardado{float:right;font-family:var(--mono);font-size:10.5px;color:var(--hecho);opacity:0;transition:opacity .2s;}
+  .ej-guardado.ver{opacity:1;}
+  .fila-campos{display:flex;gap:7px;align-items:center;margin-top:9px;flex-wrap:wrap;}
+  .grupo{display:flex;align-items:center;gap:5px;}
+  .etq{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--texto-suave);}
+  input.campo{
+    height:var(--toque);width:66px;background:var(--superficie-alta);border:1px solid var(--linea);
+    color:var(--texto);font-family:var(--mono);font-size:16px;padding:0 8px;border-radius:9px;text-align:center;
+  }
+  input.serie{width:52px;}
+  input.campo::placeholder{color:#76919C;}
+  button.unidad{
+    height:var(--toque);min-width:var(--toque);background:var(--superficie-alta);border:1px solid var(--linea);
+    color:var(--fuerza);font-family:var(--mono);font-size:13px;border-radius:9px;cursor:pointer;
+  }
+  input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--carrera);outline-offset:2px;}
+  .subir{
+    display:block;margin-top:8px;font-size:13px;color:var(--hecho);
+    background:rgba(126,214,165,.1);border-left:2px solid var(--hecho);padding:6px 9px;border-radius:0 6px 6px 0;
+  }
+
+  /* ---------- Calentamiento ---------- */
+  details.calentar{background:rgba(232,184,75,.07);border:1px dashed rgba(232,184,75,.45);border-radius:9px;padding:9px 12px;margin:0 0 14px;}
+  details.calentar>summary{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fuerza);
+    cursor:pointer;list-style:none;min-height:26px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  details.calentar>summary::-webkit-details-marker{display:none;}
+  details.calentar>summary::after{content:"+";font-family:var(--mono);font-size:16px;line-height:1;}
+  details.calentar[open]>summary::after{content:"\2212";}
+  details.calentar[open]>summary{margin-bottom:9px;border-bottom:1px solid rgba(232,184,75,.25);padding-bottom:8px;}
+  .calentar ol{margin:0;padding-left:17px;}
+  .calentar li{font-size:14px;line-height:1.45;margin-bottom:6px;}
+  .calentar li:last-child{margin-bottom:0;}
+  .calentar li b{color:var(--fuerza);font-weight:600;}
+  .calentar .pie{font-size:12.5px;line-height:1.45;color:var(--texto-suave);margin:9px 0 0;}
+
+  /* ---------- Series de aproximación ---------- */
+  .aprox{
+    display:block;margin-top:8px;padding:7px 9px;border-radius:0 6px 6px 0;
+    background:rgba(232,184,75,.08);border-left:2px solid rgba(232,184,75,.55);
+  }
+  .aprox .rotulo{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fuerza);display:block;}
+  .aprox .pasos{font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--texto);display:block;margin-top:3px;}
+  .aprox .no-cuenta{display:block;font-size:12px;line-height:1.4;color:var(--texto-suave);margin-top:5px;}
+
+  /* ---------- Esfuerzo percibido ---------- */
+  .rpe{margin-top:16px;padding-top:14px;border-top:1px solid rgba(51,82,94,.6);}
+  .rpe-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .rpe-valor{font-family:var(--display);font-size:22px;color:var(--fuerza);}
+  input[type=range]{width:100%;height:var(--toque);accent-color:var(--fuerza);background:transparent;}
+  .rpe-desc{font-size:13.5px;color:var(--texto-suave);margin:0;}
+
+  /* ---------- Botones ---------- */
+  .acciones{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap;}
+  button.accion{
+    flex:1;min-width:130px;min-height:var(--toque);
+    font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:16px;font-weight:600;
+    padding:10px 12px;border-radius:10px;cursor:pointer;
+    border:1px solid var(--linea);background:var(--superficie-alta);color:var(--texto);
+  }
+  button.accion:active{transform:translateY(1px);}
+  button.accion.principal{background:var(--carrera);color:#10262B;border-color:var(--carrera);}
+  button.accion.principal.pesas{background:var(--fuerza);border-color:var(--fuerza);color:#2A1F05;}
+  button.accion[data-hecho="si"]{background:transparent;color:var(--hecho);border-color:var(--hecho);}
+
+  .bloque-correr{font-family:var(--mono);font-size:19px;line-height:1.35;padding:8px 0 2px;}
+  .detalle-correr{font-size:14.5px;color:var(--texto-suave);margin:6px 0 0;}
+  .vacio{text-align:center;padding:22px 8px;}
+  .vacio .grande{font-family:var(--display);text-transform:uppercase;font-size:25px;margin:0 0 4px;}
+  .vacio p{margin:5px 0;color:var(--texto-suave);}
+
+  /* ---------- Avisos ---------- */
+  .banda{border-radius:9px;padding:11px 12px;margin-top:14px;font-size:14px;line-height:1.45;}
+  .banda.descarga{background:rgba(232,184,75,.1);border:1px solid rgba(232,184,75,.5);}
+  .banda.molestia{background:rgba(240,144,107,.1);border:1px solid rgba(240,144,107,.5);}
+  .banda strong{color:var(--texto);}
+
+  /* ---------- Secciones ---------- */
+  .seccion{margin-top:30px;}
+  .seccion > h2{font-size:22px;margin-bottom:2px;}
+  .seccion .sub{font-size:13.5px;color:var(--texto-suave);margin:0 0 12px;}
+  details{border-top:1px solid var(--linea);padding:13px 0 3px;}
+  summary{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--texto-suave);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:34px;}
+  summary::-webkit-details-marker{display:none;}
+  summary::after{content:"+";font-size:17px;}
+  details[open] summary::after{content:"–";}
+  details[open] summary{color:var(--texto);}
+  .contenido{padding:10px 0 8px;}
+
+  /* ---------- Gráficas ---------- */
+  .rotulo-g{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--texto-suave);margin:0 0 8px;}
+  .grafica{width:100%;height:auto;display:block;margin:4px 0 2px;overflow:visible;}
+  .grafica .eje{font-family:var(--mono);font-size:11px;fill:var(--texto-suave);}
+  select{width:100%;min-height:var(--toque);background:var(--superficie);border:1px solid var(--linea);color:var(--texto);font-family:var(--cuerpo);font-size:15px;padding:9px 10px;border-radius:9px;margin-bottom:8px;}
+  .pestanas{display:flex;gap:7px;margin-bottom:10px;}
+  .pestanas button{
+    flex:1;min-height:38px;border-radius:9px;cursor:pointer;
+    background:var(--superficie);border:1px solid var(--linea);color:var(--texto-suave);
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  }
+  .pestanas button[aria-pressed="true"]{background:var(--superficie-alta);color:var(--texto);border-color:var(--texto-suave);}
+
+  /* ---------- Cuadrícula de carreras ---------- */
+  .cuadricula{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:5px;}
+  .casilla{aspect-ratio:1;border-radius:6px;border:1px solid var(--linea);background:var(--superficie);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--texto-suave);}
+  .casilla.completa{background:var(--carrera);border-color:var(--carrera);color:#10262B;font-weight:600;}
+  .casilla.actual{border-color:var(--texto);color:var(--texto);}
+
+  .lista-ref{margin:0 0 16px;}
+  .lista-ref h3{font-family:var(--display);text-transform:uppercase;font-size:17px;margin:0 0 6px;letter-spacing:.02em;}
+  .lista-ref ul{margin:0;padding-left:18px;}
+  .lista-ref li{font-size:14.5px;margin-bottom:5px;}
+  .lista-ref li span{font-family:var(--mono);font-size:12px;color:var(--texto-suave);}
+  .hist-fila{margin-bottom:13px;}
+  .hist-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14.5px;margin-bottom:5px;}
+  .delta{font-family:var(--mono);font-size:12px;color:var(--texto-suave);white-space:nowrap;}
+  .delta.sube{color:var(--hecho);} .delta.baja{color:var(--alerta);}
+  .hist-puntos{display:flex;gap:5px;flex-wrap:wrap;}
+  .punto-hist{background:var(--superficie-alta);border:1px solid var(--linea);border-radius:6px;padding:4px 7px;font-family:var(--mono);font-size:10px;color:var(--texto-suave);text-align:center;line-height:1.25;min-width:46px;}
+  .punto-hist b{display:block;font-size:13px;color:var(--texto);font-weight:600;}
+  .nota{font-size:14px;color:var(--texto-suave);margin:10px 0 0;}
+  textarea{width:100%;min-height:74px;background:var(--superficie);border:1px solid var(--linea);border-radius:9px;color:var(--texto);font-family:var(--cuerpo);font-size:15px;padding:10px;resize:vertical;}
+  #respaldo{min-height:64px;font-family:var(--mono);font-size:11px;}
+  .aviso{font-size:13px;color:var(--texto-suave);border-left:2px solid var(--fuerza);padding-left:12px;margin-top:26px;}
+  .estado{font-family:var(--mono);font-size:11px;color:var(--texto-suave);text-align:center;padding-top:14px;min-height:18px;}
+
+  /* ---------- Temporizador fijo ---------- */
+  .temporizador{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:rgba(22,39,46,.96);border-top:1px solid var(--linea);
+    backdrop-filter:blur(8px);padding:9px 16px calc(9px + env(safe-area-inset-bottom));
+  }
+  .temporizador .interior{max-width:660px;margin:0 auto;display:flex;align-items:center;gap:9px;}
+  .temporizador button{
+    min-height:var(--toque);flex:1;border-radius:10px;cursor:pointer;
+    background:var(--superficie-alta);border:1px solid var(--linea);color:var(--texto);
+    font-family:var(--mono);font-size:13px;letter-spacing:.05em;
+  }
+  .temporizador .cuenta{
+    font-family:var(--mono);font-size:27px;font-weight:600;min-width:82px;text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .temporizador.sonando .cuenta{color:var(--hecho);}
+  .temporizador .rot{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--texto-suave);display:block;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+<div class="envoltorio">
+
+  <header>
+    <p class="eyebrow">Fuerza + carrera</p>
+    <h1>Bitácora</h1>
+  </header>
+
+  <div class="nav-fecha">
+    <button id="btn-prev" aria-label="Semana anterior">‹</button>
+    <div class="actual" id="rot-fecha"></div>
+    <button id="btn-next" aria-label="Semana siguiente">›</button>
+    <button id="btn-hoy">Hoy</button>
+  </div>
+
+  <nav class="franja" id="franja" aria-label="Días de la semana"></nav>
+  <div class="leyenda">
+    <span><i class="punto" style="background:var(--fuerza)"></i>Pesas</span>
+    <span><i class="punto" style="background:var(--carrera)"></i>Correr</span>
+    <span><i class="punto" style="background:var(--descanso)"></i>Descanso</span>
+    <span><i class="punto" style="background:transparent;box-shadow:0 0 0 1.5px var(--hecho)"></i>Hecho</span>
+  </div>
+
+  <div class="ctrl-semana">
+    <span id="txt-descarga"></span>
+    <button id="btn-descarga"></button>
+  </div>
+
+  <main id="hoy"></main>
+  <div class="estado" id="estado"></div>
+
+  <section class="seccion">
+    <h2>Progreso</h2>
+    <p class="sub">Lo que muestran tus propios datos.</p>
+
+    <p class="rotulo-g">Kilómetros por sesión de carrera</p>
+    <div id="g-carrera"></div>
+    <p class="nota" id="g-carrera-txt"></p>
+
+    <p class="rotulo-g" style="margin-top:26px">Progresión por ejercicio</p>
+    <select id="sel-ejercicio" aria-label="Elegí el ejercicio"></select>
+    <div class="pestanas" role="group" aria-label="Qué medir">
+      <button data-metrica="peso" aria-pressed="true">Peso</button>
+      <button data-metrica="volumen" aria-pressed="false">Volumen total</button>
+    </div>
+    <div id="g-fuerza"></div>
+    <p class="nota" id="g-fuerza-txt"></p>
+  </section>
+
+  <section class="seccion">
+    <details id="det-historial">
+      <summary>Historial de pesos</summary>
+      <div class="contenido" id="historial"></div>
+    </details>
+
+    <details>
+      <summary>Molestias registradas</summary>
+      <div class="contenido" id="molestias"></div>
+    </details>
+
+    <details>
+      <summary>Las cuatro sesiones de gimnasio</summary>
+      <div class="contenido" id="ref-gimnasio"></div>
+    </details>
+
+    <details>
+      <summary>Reglas que sostienen el plan</summary>
+      <div class="contenido">
+        <p class="nota"><strong style="color:var(--texto)">Cómo subir el peso:</strong> cuando llegues al tope de repeticiones en todas las series, subí alrededor de un 5 % y volvé al número de abajo del rango. La bitácora te avisa sola cuando pasa.</p>
+        <p class="nota"><strong style="color:var(--texto)">Cuánto esfuerzo:</strong> terminá cada serie sintiendo que te quedaban 1 o 2 repeticiones. Llegar al fallo en todas las series suma fatiga sin sumar adaptación.</p>
+        <p class="nota"><strong style="color:var(--texto)">Descanso entre series:</strong> 90 s en ejercicios grandes, 60 s en los chicos. El combustible rápido del músculo se repone a medias a los 30 segundos y llega al 85 % cerca de los dos minutos: descansar de menos convierte la sesión de fuerza en otra cosa.</p>
+        <p class="nota"><strong style="color:var(--texto)">Ritmo al correr:</strong> tenés que poder decir una frase completa. Caminar en las pausas es parte del entrenamiento, no una falla.</p>
+        <p class="nota"><strong style="color:var(--texto)">Estiramientos:</strong> los de sostener la posición van al final, nunca antes. Estirar en frío y sostenido baja la fuerza que podés aplicar en los minutos siguientes.</p>
+        <p class="nota"><strong style="color:var(--texto)">Semana de descarga:</strong> cada seis semanas aproximadamente. Lo que se recorta es el volumen, no el peso: dos series en vez de tres, con el peso casi igual (un 10-15 % menos). Las carreras mantienen los días pero cada una se acorta un 40 %. La comida no cambia. La adaptación se acumula lento y se va lento; la fatiga se acumula rápido y se va rápido, así que esta semana limpia la fatiga y deja intacto lo construido.</p>
+        <p class="nota"><strong style="color:var(--texto)">Agujetas o algo más:</strong> la agujeta normal es difusa, aparece entre 24 y 48 h después y mejora al calentar. Un dolor localizado, presente desde el primer minuto y que empeora con el movimiento, es otra cosa.</p>
+      </div>
+    </details>
+
+    <details id="det-respaldo">
+      <summary>Respaldo y diagnóstico</summary>
+      <div class="contenido">
+        <p class="nota" id="diagnostico"></p>
+        <p class="nota">Copiá este texto y guardalo donde quieras. Si algún día la bitácora aparece vacía, pegalo acá y tocá Restaurar.</p>
+        <textarea id="respaldo" spellcheck="false" placeholder="Tu respaldo aparecerá aquí"></textarea>
+        <div class="acciones">
+          <button class="accion" id="btn-copiar">Copiar respaldo</button>
+          <button class="accion" id="btn-restaurar">Restaurar</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <p class="aviso">Esta bitácora organiza el plan, no reemplaza una evaluación médica. Si aparece dolor en el pecho, mareo o falta de aire desproporcionada, parás y consultás.</p>
+</div>
+
+<div class="temporizador" id="temporizador">
+  <div class="interior">
+    <div>
+      <span class="rot">Descanso</span>
+      <span class="cuenta" id="cuenta">--:--</span>
+    </div>
+    <button id="t90">90 s</button>
+    <button id="t60">60 s</button>
+    <button id="tstop">Parar</button>
+  </div>
+</div>
+
+<script>
+/* ============ Datos del plan ============
+   Cada ejercicio: [nombre, series, repMin, repMax, tipo, nota]
+   tipo: reps | seg | metros                                   */
+const GIM = {
+  infA:{titulo:"Tren inferior A",
+    aprox:{0:"completa"},
+    calentar:["<b>Elevar</b> · 5-8 min de bici o caminata inclinada, hasta respirar un poco más fuerte",
+              "<b>Movilizar</b> · 10 sentadillas sin peso · 10 círculos de cadera por lado · 10 balanceos de pierna por lado · tobillo contra la pared, 10 por lado",
+              "<b>Activar</b> · 12 puentes de glúteo · 10 pasos laterales con banda por lado"],
+    items:[
+      ["Prensa de piernas",3,10,12,"reps","Rodillas alineadas con los pies"],
+      ["Curl femoral en máquina",3,10,12,"reps","Baja el peso despacio"],
+      ["Zancadas con mancuernas",2,10,10,"reps","Torso erguido · por pierna"],
+      ["Elevación de talones",3,12,15,"reps","Pausa arriba"],
+      ["Plancha abdominal",3,20,30,"seg","Glúteos apretados"]]},
+  supA:{titulo:"Tren superior A",
+    aprox:{0:"completa"},
+    calentar:["<b>Elevar</b> · 5-8 min de bici, elíptica o remo",
+              "<b>Movilizar</b> · 15 círculos de brazos por lado · 10 dislocaciones de hombro con palo o banda · 10 rotaciones de torso sentado",
+              "<b>Activar</b> · 15 aperturas con banda · 12 rotaciones externas de hombro por lado"],
+    items:[
+      ["Press de pecho",3,8,12,"reps","Codos a unos 45°"],
+      ["Jalón al pecho",3,10,12,"reps","Lleva los codos al costado"],
+      ["Press de hombros sentado",3,10,12,"reps","No arquees la espalda"],
+      ["Curl de bíceps",2,12,12,"reps","Codos pegados al cuerpo"],
+      ["Extensión de tríceps en polea",2,12,12,"reps","Solo se mueve el antebrazo"]]},
+  infB:{titulo:"Tren inferior B",
+    aprox:{0:"completa",1:"corta"},
+    calentar:["<b>Elevar</b> · 5-8 min de bici o caminata inclinada",
+              "<b>Movilizar</b> · 10 bisagras de cadera · 10 sentadillas sin peso · 10 balanceos de pierna por lado · 8 gato-camello",
+              "<b>Activar</b> · 12 puentes de glúteo · 10 pasos laterales con banda por lado"],
+    items:[
+      ["Sentadilla Smith o goblet",3,8,10,"reps","Baja hasta donde controles"],
+      ["Peso muerto rumano",3,10,10,"reps","Espalda recta, rango corto"],
+      ["Extensión de cuádriceps",3,12,12,"reps","Sin impulso"],
+      ["Puente de glúteos con peso",3,12,12,"reps","Aprieta 1 seg arriba"],
+      ["Paseo del granjero",3,30,30,"metros","Hombros atrás, paso firme"]]},
+  supB:{titulo:"Tren superior B",
+    aprox:{0:"completa",1:"corta"},
+    calentar:["<b>Elevar</b> · 5-8 min de bici, elíptica o remo",
+              "<b>Movilizar</b> · 15 círculos de brazos por lado · 10 dislocaciones de hombro con palo o banda · 10 círculos de muñeca por lado",
+              "<b>Activar</b> · 15 aperturas con banda · 12 face pull con poco peso"],
+    items:[
+      ["Remo sentado en polea",3,10,12,"reps","Junta los omóplatos"],
+      ["Press inclinado con mancuernas",3,8,12,"reps","Banco a 30°"],
+      ["Elevaciones laterales",3,12,15,"reps","Peso ligero, sin balanceo"],
+      ["Face pull",3,15,15,"reps","Clave para hombros sanos"],
+      ["Curl martillo",2,12,12,"reps","Palmas enfrentadas"]]}
+};
+
+const CORRER = [
+  ["4 × 4/2",16],["5 × 4/2",20],["5 × 4/2",20],["4 × 5/2",20],["4 × 6/2",24],
+  ["4 × 6/2",24],["3 × 8/2",24],["3 × 9/2",27],["3 × 9/2",27],["3 × 10/2",30],
+  ["2 × 13/3",26],["2 × 15/3",30],["2 × 15/2",30],["20 min + 2 caminando + 10 min",30],
+  ["25 min continuos",25],["25 min continuos",25],["28 min continuos",28],
+  ["30 min continuos",30],["30 min continuos",30],["30 min continuos + medí la distancia",30]
+];
+
+const SEMANA = [
+  {inicial:"Dom", gim:null,   correr:false},
+  {inicial:"Lun", gim:"infA", correr:false},
+  {inicial:"Mar", gim:"supA", correr:true },
+  {inicial:"Mié", gim:null,   correr:false},
+  {inicial:"Jue", gim:"supB", correr:true },
+  {inicial:"Vie", gim:"infB", correr:false},
+  {inicial:"Sáb", gim:null,   correr:true }
+];
+
+const RPE_TXT = {
+  1:"Muy suave, casi sin esfuerzo",2:"Suave",3:"Cómoda de principio a fin",
+  4:"Moderada, sobraba margen",5:"Firme pero controlada",6:"Exigente, margen justo",
+  7:"Dura, costó terminar las series",8:"Muy dura",9:"Al límite",10:"No pude completarla"
+};
+const ZONAS = ["Rodilla","Tobillo o pie","Cadera","Zona lumbar","Hombro","Codo o muñeca","Cuello","Espinilla","Otra"];
+
+/* ============ Estado ============ */
+const CLAVE = "bitacora-fuerza-carrera-v1";
+const LB = 0.45359237;
+const KM_POR_MIN = 7.5/60;
+
+let estado = { v:2, inicio:null, carrerasHechas:0, sesionesCorridas:[], registros:{}, unidades:{}, descargas:[], notas:"" };
+let fechaActiva = new Date();
+let metrica = "peso";
+
+function fk(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function hoyK(){ return fk(new Date()); }
+function activaK(){ return fk(fechaActiva); }
+function esFuturo(){ return activaK() > hoyK(); }
+function fechaCorta(f){ const p=f.split("-"); return p[2]+"/"+p[1]; }
+function num(n){ return (Math.round(n*10)/10).toString().replace(/\.0$/,"").replace(".",","); }
+function aKg(v,u){ return u==="lb" ? v*LB : v; }
+function deKg(kg,u){ return u==="lb" ? kg/LB : kg; }
+function unidadDe(id){ return estado.unidades[id]==="lb" ? "lb" : "kg"; }
+function reg(f){ if(!estado.registros[f]) estado.registros[f]={gim:{},hecho:{}}; 
+                 if(!estado.registros[f].gim) estado.registros[f].gim={};
+                 if(!estado.registros[f].hecho) estado.registros[f].hecho={};
+                 return estado.registros[f]; }
+function regLeer(f){ return estado.registros[f] || {gim:{},hecho:{}}; }
+function aviso(t,fijo){ const e=document.getElementById("estado"); e.textContent=t; if(t&&!fijo) setTimeout(()=>{ if(e.textContent===t) e.textContent=""; },2600); }
+
+/* Semana del plan, para orientarse */
+function semanaDelPlan(){
+  if(!estado.inicio) return 1;
+  const a=new Date(estado.inicio+"T12:00:00"), b=new Date(activaK()+"T12:00:00");
+  return Math.floor((b-a)/86400000/7)+1;
+}
+/* Las semanas se identifican por su domingo */
+function semanaK(d){ const b=new Date(d); b.setDate(b.getDate()-b.getDay()); return fk(b); }
+function esDescarga(k){ return (estado.descargas||[]).indexOf(k)>=0; }
+function semanasDesdeDescarga(){
+  const hoySem=new Date(semanaK(new Date())+"T12:00:00");
+  const ds=(estado.descargas||[]).slice().sort();
+  const ref = ds.length ? ds[ds.length-1] : (estado.inicio ? semanaK(new Date(estado.inicio+"T12:00:00")) : null);
+  if(!ref) return 0;
+  return Math.round((hoySem-new Date(ref+"T12:00:00"))/86400000/7);
+}
+/* Señales fisiológicas de que conviene descargar ya */
+function senales(){
+  const s=[], hoy=new Date();
+  const dentro=(f,dias)=>(hoy-new Date(f+"T12:00:00"))/86400000<=dias;
+
+  const rpes=Object.keys(estado.registros).sort().filter(f=>estado.registros[f].rpe>0).slice(-4);
+  if(rpes.length>=3){
+    const m=rpes.reduce((a,f)=>a+estado.registros[f].rpe,0)/rpes.length;
+    if(m>=8) s.push("El esfuerzo percibido de tus últimas sesiones promedia "+num(m)+" sobre 10: el mismo trabajo te está costando más.");
+  }
+  let bajando=0;
+  Object.keys(GIM).forEach(k=>GIM[k].items.forEach(it=>{
+    const id=k+"|"+it[0];
+    const h=Object.keys(estado.registros).sort().filter(f=>{
+      const e=estado.registros[f].gim&&estado.registros[f].gim[id]; return e&&e.kg>0 && dentro(f,21);
+    });
+    if(h.length>=2){
+      const u=estado.registros[h[h.length-1]].gim[id].kg, p=estado.registros[h[h.length-2]].gim[id].kg;
+      if(u<p) bajando++;
+    }
+  }));
+  if(bajando>=2) s.push(bajando+" ejercicios bajaron de peso respecto a la sesión anterior. Una vez es ruido; varios a la vez suele ser fatiga acumulada.");
+
+  const mol=Object.keys(estado.registros).filter(f=>dentro(f,10)&&estado.registros[f].molestia&&estado.registros[f].molestia.nivel>=4);
+  if(mol.length) s.push("Registraste una molestia de 4 o más en los últimos diez días.");
+  return s;
+}
+
+/* ============ Persistencia ============ */
+let hayAlmacen=true, motivoFallo="";
+async function cargar(){
+  /* Prueba real de ida y vuelta contra el almacenamiento del navegador */
+  try{
+    localStorage.setItem(CLAVE+"-test","ok");
+    if(localStorage.getItem(CLAVE+"-test")!=="ok"){
+      hayAlmacen=false; motivoFallo="La escritura no devolvió el valor esperado.";
+    }
+    localStorage.removeItem(CLAVE+"-test");
+  }catch(e){
+    hayAlmacen=false;
+    motivoFallo="El navegador no permite guardar aquí"+(e&&e.name==="QuotaExceededError"?" (sin espacio o navegación privada)":"")+". ";
+  }
+  try{
+    const r=localStorage.getItem(CLAVE);
+    if(r) migrar(JSON.parse(r));
+  }catch(e){ /* primera vez: no hay nada guardado todavía */ }
+}
+function migrar(d){
+  if(d.v===2){ estado=Object.assign(estado,d); }
+  else{
+    /* Versión 1: historial por ejercicio, sin repeticiones. Se conserva el peso. */
+    estado.carrerasHechas=d.carrerasHechas||0;
+    estado.unidades=d.unidades||{};
+    estado.notas=d.notas||"";
+    Object.keys(d.historial||{}).forEach(id=>{
+      (d.historial[id]||[]).forEach(e=>{
+        const kg = e.kg!==undefined ? e.kg : parseFloat(String(e.p).replace(",","."));
+        if(!(kg>0)) return;
+        reg(e.f).gim[id]={kg:kg,u:e.u||"kg",series:[]};
+      });
+    });
+  }
+  if(!estado.registros) estado.registros={};
+  if(!estado.sesionesCorridas) estado.sesionesCorridas=[];
+  if(!estado.descargas) estado.descargas=[];
+  const fechas=Object.keys(estado.registros).sort();
+  if(!estado.inicio && fechas.length) estado.inicio=fechas[0];
+}
+let pendiente=null,guardando=false,sucio=false;
+async function escribir(){
+  if(!hayAlmacen) return;
+  if(guardando){ sucio=true; return; }
+  guardando=true; sucio=false;
+  try{ localStorage.setItem(CLAVE, JSON.stringify(estado)); }
+  catch(e){
+    try{ localStorage.setItem(CLAVE, JSON.stringify(estado)); }
+    catch(e2){ aviso("No se pudo guardar. Revisá Respaldo y diagnóstico.",true); }
+  }
+  guardando=false; if(sucio) escribir();
+}
+function guardar(inmediato){
+  if(!hayAlmacen) return;
+  if(!estado.inicio) estado.inicio=activaK()<hoyK()?activaK():hoyK();
+  clearTimeout(pendiente);
+  if(inmediato){ escribir(); return; }
+  pendiente=setTimeout(escribir,500);
+}
+["pagehide","blur"].forEach(ev=>window.addEventListener(ev,()=>{clearTimeout(pendiente);escribir();}));
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){clearTimeout(pendiente);escribir();} });
+
+/* ============ Temporizador ============ */
+let tmr=null, restante=0, audio=null;
+function pitar(){
+  try{
+    audio = audio || new (window.AudioContext||window.webkitAudioContext)();
+    [0,180,360].forEach(ms=>setTimeout(()=>{
+      const o=audio.createOscillator(), g=audio.createGain();
+      o.frequency.value=880; g.gain.value=.16;
+      o.connect(g); g.connect(audio.destination); o.start();
+      setTimeout(()=>o.stop(),120);
+    },ms));
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([200,90,200]);
+}
+function pintarCuenta(){
+  const el=document.getElementById("cuenta");
+  const m=Math.floor(restante/60), s=restante%60;
+  el.textContent = restante>0 ? m+":"+String(s).padStart(2,"0") : "--:--";
+}
+function arrancarTimer(seg){
+  clearInterval(tmr); restante=seg;
+  document.getElementById("temporizador").classList.remove("sonando");
+  pintarCuenta();
+  try{ (audio = audio || new (window.AudioContext||window.webkitAudioContext)()).resume(); }catch(e){}
+  tmr=setInterval(()=>{
+    restante--;
+    pintarCuenta();
+    if(restante<=0){
+      clearInterval(tmr); tmr=null; pitar();
+      document.getElementById("temporizador").classList.add("sonando");
+      document.getElementById("cuenta").textContent="¡Ya!";
+      setTimeout(()=>{ document.getElementById("temporizador").classList.remove("sonando"); pintarCuenta(); },4000);
+    }
+  },1000);
+}
+
+/* ============ Navegación de fecha ============ */
+function pintarNav(){
+  const t=fechaActiva.toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long"});
+  const sp=semanaDelPlan();
+  document.getElementById("rot-fecha").innerHTML =
+    t.charAt(0).toUpperCase()+t.slice(1) +
+    '<small>'+(activaK()===hoyK()?"Hoy":(esFuturo()?"Vista previa":"Registro pasado"))+' · Semana '+sp+'</small>';
+}
+function pintarFranja(){
+  const cont=document.getElementById("franja"); cont.innerHTML="";
+  const base=new Date(fechaActiva); base.setDate(base.getDate()-base.getDay());
+  for(let i=0;i<7;i++){
+    const d=new Date(base); d.setDate(base.getDate()+i);
+    const k=fk(d), s=SEMANA[i], r=regLeer(k);
+    const b=document.createElement("button");
+    b.className="dia"+(k===hoyK()?" hoy":"");
+    b.setAttribute("aria-pressed", k===activaK()?"true":"false");
+    let barras="";
+    if(s.gim)    barras+='<span class="barra fuerza'+(r.hecho.gim?" ok":"")+'"></span>';
+    if(s.correr) barras+='<span class="barra carrera'+(r.hecho.correr?" ok":"")+'"></span>';
+    if(!barras)  barras='<span class="barra descanso"></span>';
+    b.innerHTML='<span class="inicial">'+s.inicial+'</span><span class="numero">'+d.getDate()+'</span><span class="barras">'+barras+'</span>';
+    b.setAttribute("aria-label", s.inicial+" "+d.getDate()+(s.gim?", "+GIM[s.gim].titulo:"")+(s.correr?", correr":"")+(!s.gim&&!s.correr?", descanso":""));
+    b.onclick=()=>{ fechaActiva=d; pintarTodo(); };
+    cont.appendChild(b);
+  }
+}
+
+/* ============ Tarjeta del día ============ */
+function ultimoRegistro(id, antesDe){
+  const fechas=Object.keys(estado.registros).filter(f=>f<antesDe && estado.registros[f].gim && estado.registros[f].gim[id]).sort();
+  if(!fechas.length) return null;
+  const f=fechas[fechas.length-1];
+  return Object.assign({f:f}, estado.registros[f].gim[id]);
+}
+function volumen(e,it){
+  if(!e || it[4]!=="reps" || !(e.kg>0)) return 0;
+  return (e.series||[]).reduce((a,r)=>a+(r>0?r*e.kg:0),0);
+}
+function textoSeries(e){
+  const s=(e.series||[]).filter(x=>x>0);
+  return s.length ? s.join("/") : "";
+}
+
+/* ============ Series de aproximación ============
+   No cuentan como series de trabajo: son demasiado ligeras para producir
+   estímulo (quedan lejísimos del fallo) y demasiado cortas para producir
+   fatiga. Sólo suben temperatura y le recuerdan el patrón al sistema
+   nervioso. Los escalones se cierran conforme sube el peso para que
+   ningún salto quede desproporcionado. */
+function escalonesAprox(kg, modo){
+  if(!(kg>0) || kg<15) return [];
+  if(modo==="corta") return [{p:.6, reps:5}];
+  if(kg<40)  return [{p:.50,reps:10},{p:.75,reps:5}];
+  if(kg<80)  return [{p:.45,reps:10},{p:.70,reps:5},{p:.90,reps:3}];
+  if(kg<120) return [{p:.40,reps:8},{p:.60,reps:5},{p:.80,reps:3},{p:.90,reps:2}];
+  return [{p:.35,reps:8},{p:.55,reps:5},{p:.70,reps:3},{p:.85,reps:2},{p:.93,reps:1}];
+}
+function redondeaAprox(v,u){ return u==="lb" ? Math.round(v/5)*5 : Math.round(v/2.5)*2.5; }
+function textoAprox(kg,u,modo){
+  const es=escalonesAprox(kg,modo);
+  if(!es.length) return "";
+  return es.map(e=>num(redondeaAprox(deKg(kg*e.p,u),u))+" "+u+" × "+e.reps).join("  →  ");
+}
+function bloqueAprox(base,u,modo,series){
+  let cuerpo, pie;
+  if(!(base>0)){
+    cuerpo = "anotá el peso de trabajo y acá aparecen los escalones";
+    pie = "Van antes de la primera serie y no se registran.";
+  }else{
+    const t = textoAprox(base,u,modo);
+    if(!t){
+      cuerpo = "con este peso alcanza una serie suelta de 10 antes de empezar";
+      pie = "No se registra.";
+    }else{
+      cuerpo = t;
+      pie = "Van antes de la primera serie y no se registran: si el plan pide "+series+
+            (series===1?" serie":" series")+", son "+series+" de trabajo. No deben cansarte.";
+    }
+  }
+  return '<span class="aprox"><span class="rotulo">Aproximación'+(modo==="corta"?" · cambia el patrón":"")+
+    '</span><span class="pasos">'+cuerpo+'</span><span class="no-cuenta">'+pie+'</span></span>';
+}
+
+function tarjetaEjercicio(clave,it,modoAprox){
+  const [nombre,series,rMin,rMax,tipo,nota]=it;
+  const id=clave+"|"+nombre;
+  const u=unidadDe(id);
+  const r=regLeer(activaK()).gim[id]||{};
+  const val = r.kg>0 ? num(deKg(r.kg,u)) : "";
+  const prev=ultimoRegistro(id, activaK());
+  const pres = series+" × "+(rMin===rMax?rMin:rMin+"-"+rMax)+(tipo==="seg"?" s":(tipo==="metros"?" m":""));
+
+  let previo="";
+  if(prev){
+    const enU = u==="lb" ? num(deKg(prev.kg,"lb"))+" lb" : num(prev.kg)+" kg";
+    const ss=textoSeries(prev);
+    previo='<span class="ej-previo">Última vez: '+(prev.kg>0?enU:"sin peso")+(ss?" × "+ss:"")+' · '+fechaCorta(prev.f)+'</span>';
+  }
+
+  let aprox="";
+  if(modoAprox && tipo==="reps"){
+    const base = r.kg>0 ? r.kg : (prev && prev.kg>0 ? prev.kg : 0);
+    aprox = bloqueAprox(base, u, modoAprox, series);
+  }
+
+  let campos='<div class="fila-campos">';
+  if(tipo==="reps"){
+    campos+='<div class="grupo"><span class="etq">Peso</span>'+
+      '<input class="campo peso" inputmode="decimal" placeholder="—" value="'+val+'" data-id="'+id+'" aria-label="Peso en '+nombre+'">'+
+      '<button class="unidad" data-unidad="'+id+'" aria-label="Cambiar unidad">'+u+'</button></div>';
+  }
+  campos+='<div class="grupo"><span class="etq">'+(tipo==="seg"?"Seg":(tipo==="metros"?"Metros":"Reps"))+'</span>';
+  for(let i=0;i<series;i++){
+    const v=(r.series&&r.series[i]>0)?r.series[i]:"";
+    campos+='<input class="campo serie" inputmode="numeric" placeholder="'+rMin+'" value="'+v+'" data-serie="'+id+'" data-i="'+i+'" aria-label="Serie '+(i+1)+' de '+nombre+'">';
+  }
+  campos+='</div></div>';
+
+  /* Aviso de progresión */
+  let subir="";
+  if(tipo==="reps" && r.kg>0 && (r.series||[]).filter(x=>x>=rMax).length>=series){
+    const sug = u==="lb" ? Math.round(deKg(r.kg*1.05,"lb")/2.5)*2.5+" lb" : (Math.round(r.kg*1.05*2)/2)+" kg";
+    subir='<span class="subir">Completaste el tope en las '+series+' series. La próxima vez subí a unos <strong>'+sug+'</strong> y volvé a '+rMin+' repeticiones.</span>';
+  }
+
+  return '<div class="ej" data-tarjeta="'+id+'">'+
+    '<span class="ej-guardado">Guardado ✓</span>'+
+    '<span class="ej-nombre">'+nombre+'<span class="ej-pres">'+pres+'</span></span>'+
+    '<span class="ej-nota">'+nota+'</span>'+previo+aprox+campos+subir+'</div>';
+}
+
+function pintarDescarga(){
+  const k=semanaK(fechaActiva), activa=esDescarga(k);
+  const b=document.getElementById("btn-descarga"), t=document.getElementById("txt-descarga");
+  b.setAttribute("aria-pressed", activa?"true":"false");
+  b.textContent = activa ? "Es descarga" : "Marcar descarga";
+  const n=semanasDesdeDescarga();
+  const ds=(estado.descargas||[]).length;
+  t.textContent = activa
+    ? "Semana liviana: bajás la carga a propósito."
+    : (ds ? "Última descarga hace "+n+(n===1?" semana":" semanas")+"."
+          : "Todavía no marcaste ninguna descarga.");
+}
+function bandaDescarga(){
+  if(esDescarga(semanaK(fechaActiva))) return "";
+  const n=semanasDesdeDescarga(), s=senales();
+  if(n>=8) return '<div class="banda descarga"><strong>Van '+n+' semanas sin descarga.</strong> Ocho es el techo que conviene no pasar cuando entrenás seis días por semana. Marcá esta semana o la próxima como descarga.</div>';
+  if(s.length>=2) return '<div class="banda molestia"><strong>Dos señales de fatiga acumulada.</strong><br>· '+s.join('<br>· ')+'<br>Con dos o más a la vez, adelantá la descarga en vez de esperar al calendario.</div>';
+  if(n>=6) return '<div class="banda descarga"><strong>Llevás '+n+' semanas desde la última descarga.</strong> Es la ventana habitual para meter una. Si te sentís bien podés estirarla una o dos semanas más, pero no mucho más.</div>';
+  if(s.length===1) return '<div class="banda molestia"><strong>Una señal para vigilar.</strong> '+s[0]+' Con una sola no hace falta cambiar nada; si aparece una segunda, descargá.</div>';
+  return "";
+}
+
+function pintarDia(){
+  const d=SEMANA[fechaActiva.getDay()], cont=document.getElementById("hoy"), k=activaK();
+  const r=regLeer(k);
+  let html=bandaDescarga();
+
+  if(!d.gim && !d.correr){
+    cont.innerHTML=html+'<div class="tarjeta"><div class="vacio"><p class="grande">Día de descanso</p>'+
+      '<p>Es cuando el cuerpo repara y se hace más fuerte. Una caminata tranquila vale; entrenar no.</p></div></div>';
+    return;
+  }
+
+  if(d.gim){
+    const s=GIM[d.gim];
+    const descarga = esDescarga(semanaK(fechaActiva));
+    html+='<section class="tarjeta pesas"><div class="tarjeta-cab"><span class="tipo pesas">Gimnasio</span>'+
+      '<span class="contador">'+fechaCorta(k)+'</span></div><h2>'+s.titulo+'</h2>';
+    if(descarga) html+='<div class="banda descarga"><strong>Semana de descarga.</strong> Hacé dos series en vez de tres en cada ejercicio, con el peso casi igual (un 10-15 % menos). Las aproximaciones siguen igual. No es perder terreno: quitás fatiga sin tocar la adaptación, y los tendones alcanzan al músculo.</div>';
+    html+='<details class="calentar"><summary>Calentamiento · 10-12 min</summary><ol>'+
+      s.calentar.map(x=>'<li>'+x+'</li>').join("")+'</ol>'+
+      '<p class="pie">Terminás sintiéndote mejor que al empezar, nunca cansado. Los estiramientos sostenidos van al final de la sesión, no acá: en frío bajan la fuerza que podés aplicar durante los minutos siguientes.</p></details>';
+    html+=s.items.map((it,i)=>tarjetaEjercicio(d.gim,it,(s.aprox||{})[i])).join("");
+
+    const rpe=r.rpe||0;
+    html+='<div class="rpe"><div class="rpe-cab"><span class="etq">Qué tan dura se sintió</span>'+
+      '<span class="rpe-valor" id="rpe-num">'+(rpe?rpe:"—")+'</span></div>'+
+      '<input type="range" min="0" max="10" step="1" value="'+rpe+'" id="rpe" aria-label="Esfuerzo percibido del 1 al 10">'+
+      '<p class="rpe-desc" id="rpe-txt">'+(rpe?RPE_TXT[rpe]:"Deslizá al terminar la sesión.")+'</p></div>';
+
+    if(!esFuturo()) html+='<div class="acciones"><button class="accion principal pesas" id="btn-gim" data-hecho="'+(r.hecho.gim?"si":"no")+'">'+(r.hecho.gim?"Sesión registrada":"Marcar como hecha")+'</button></div>';
+    html+='</section>';
+  }
+
+  if(d.correr){
+    const yaHecha = r.hecho.correr;
+    const n = yaHecha && r.correrN ? r.correrN-1 : Math.min(estado.carrerasHechas, CORRER.length-1);
+    const terminado = !yaHecha && estado.carrerasHechas>=CORRER.length;
+    const s=CORRER[n];
+    html+='<section class="tarjeta correr"><div class="tarjeta-cab"><span class="tipo correr">Carrera</span>'+
+      '<span class="contador">'+(terminado?"Plan completo":"Sesión "+(n+1)+" de 20")+'</span></div>';
+    if(terminado){
+      html+='<h2>Plan terminado</h2><p class="detalle-correr">Ya corrés 30 minutos seguidos. Ahora sí tiene sentido pensar en velocidad: primero estirá una salida semanal a 40-45 minutos, y recién después sumá un día de ritmos rápidos.</p>';
+    }else{
+      html+='<h2>'+(s[0].indexOf("×")>=0?"Intervalos":"Continuo")+'</h2>'+
+        '<p class="bloque-correr">'+s[0]+'</p>'+
+        '<p class="detalle-correr">'+s[1]+' min trotando · unos '+num(s[1]*KM_POR_MIN)+' km. Sumá 8 min de calentamiento antes y 5 de caminata suave después.</p>';
+      if(!esFuturo()){
+        if(yaHecha){
+          html+='<div class="acciones"><button class="accion" id="btn-correr-des" data-hecho="si">Deshacer registro</button></div>';
+        }else{
+          html+='<p class="nota" style="margin-top:14px"><strong style="color:var(--texto)">¿Cómo se sintió?</strong> De esto depende si avanzás a la sesión siguiente.</p>'+
+            '<div class="acciones">'+
+            '<button class="accion" data-sensacion="facil">Cómoda</button>'+
+            '<button class="accion" data-sensacion="justa">Justa</button>'+
+            '<button class="accion" data-sensacion="dura">Dura</button></div>';
+        }
+      }
+    }
+    html+='</section>';
+  }
+
+  /* Molestias */
+  const m=r.molestia||{};
+  html+='<section class="tarjeta"><div class="tarjeta-cab"><span class="tipo" style="color:var(--alerta)">Molestias</span></div>'+
+    '<p class="nota" style="margin-top:2px">Dejalo vacío si no hubo nada.</p>'+
+    '<div class="fila-campos">'+
+    '<select id="m-zona" style="flex:1;min-width:150px;margin:0"><option value="">Sin molestias</option>'+
+      ZONAS.map(z=>'<option'+(m.zona===z?" selected":"")+'>'+z+'</option>').join("")+'</select>'+
+    '<div class="grupo"><span class="etq">0-10</span>'+
+      '<input class="campo serie" id="m-nivel" inputmode="numeric" placeholder="0" value="'+(m.nivel||"")+'" aria-label="Nivel de molestia"></div>'+
+    '</div>';
+  if(m.nivel>=4){
+    html+='<div class="banda molestia">Con 4 o más sobre 10, la recomendación es bajar la carga de esa zona y ver cómo responde en las siguientes 24 horas. Si el dolor sube después de entrenar o aparece al empezar, no sigas empujando.</div>';
+  }
+  html+='</section>';
+
+  if(esFuturo()) html+='<p class="nota">Estás viendo un día que todavía no llegó. Podés consultar la sesión, pero no registrarla.</p>';
+
+  cont.innerHTML=html;
+  conectarDia();
+}
+
+/* ============ Eventos del día ============ */
+function destello(id){
+  const t=document.querySelector('[data-tarjeta="'+CSS.escape(id)+'"] .ej-guardado');
+  if(!t) return;
+  t.classList.add("ver"); setTimeout(()=>t.classList.remove("ver"),1300);
+}
+function conectarDia(){
+  const k=activaK();
+
+  document.querySelectorAll("input.peso").forEach(i=>{
+    const f=(inm)=>{
+      const id=i.dataset.id, u=unidadDe(id);
+      const v=parseFloat(i.value.trim().replace(",","."));
+      const e=reg(k).gim[id]=reg(k).gim[id]||{series:[]};
+      if(v>0){ e.kg=Math.round(aKg(v,u)*100)/100; e.u=u; } else { delete e.kg; }
+      guardar(inm); if(inm){ destello(id); pintarDia(); pintarGraficas(); pintarHistorial(); }
+    };
+    i.addEventListener("input",()=>f(false));
+    i.addEventListener("blur",()=>f(true));
+  });
+
+  document.querySelectorAll("input.serie[data-serie]").forEach(i=>{
+    const f=(inm)=>{
+      const id=i.dataset.serie, idx=+i.dataset.i;
+      const v=parseInt(i.value.trim(),10);
+      const e=reg(k).gim[id]=reg(k).gim[id]||{series:[]};
+      e.series=e.series||[];
+      e.series[idx]= v>0 ? v : 0;
+      guardar(inm); if(inm){ destello(id); pintarDia(); pintarGraficas(); }
+    };
+    i.addEventListener("input",()=>f(false));
+    i.addEventListener("blur",()=>f(true));
+  });
+
+  document.querySelectorAll("button.unidad").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.unidad;
+      estado.unidades[id]=unidadDe(id)==="kg"?"lb":"kg";
+      guardar(true); pintarDia();
+      aviso("Escribís en "+unidadDe(id)+" · se guarda en kg");
+    };
+  });
+
+  const rp=document.getElementById("rpe");
+  if(rp){
+    const act=(inm)=>{
+      const v=+rp.value;
+      reg(k).rpe=v;
+      document.getElementById("rpe-num").textContent=v?v:"—";
+      document.getElementById("rpe-txt").textContent=v?RPE_TXT[v]:"Deslizá al terminar la sesión.";
+      guardar(inm);
+    };
+    rp.addEventListener("input",()=>act(false));
+    rp.addEventListener("change",()=>act(true));
+  }
+
+  const bg=document.getElementById("btn-gim");
+  if(bg) bg.onclick=()=>{ const r=reg(k); r.hecho.gim=!r.hecho.gim; guardar(true); pintarTodo(); };
+
+  document.querySelectorAll("[data-sensacion]").forEach(b=>{
+    b.onclick=()=>{
+      const s=b.dataset.sensacion, r=reg(k);
+      const n=Math.min(estado.carrerasHechas, CORRER.length-1);
+      r.hecho.correr=true; r.correrN=n+1; r.sensacion=s;
+      estado.sesionesCorridas.push({f:k,n:n+1,s:s});
+      if(s!=="dura") estado.carrerasHechas=Math.min(CORRER.length, estado.carrerasHechas+1);
+      guardar(true); pintarTodo();
+      aviso(s==="dura" ? "Repetís esta misma sesión la próxima vez" : "Avanzás a la sesión "+(estado.carrerasHechas+1));
+    };
+  });
+  const bd=document.getElementById("btn-correr-des");
+  if(bd) bd.onclick=()=>{
+    const r=reg(k);
+    if(r.sensacion && r.sensacion!=="dura") estado.carrerasHechas=Math.max(0,estado.carrerasHechas-1);
+    estado.sesionesCorridas=estado.sesionesCorridas.filter(x=>x.f!==k);
+    delete r.hecho.correr; delete r.correrN; delete r.sensacion;
+    guardar(true); pintarTodo();
+  };
+
+  const mz=document.getElementById("m-zona"), mn=document.getElementById("m-nivel");
+  const guardarM=(inm)=>{
+    const r=reg(k);
+    const z=mz.value, n=parseInt(mn.value,10);
+    if(!z){ delete r.molestia; } else { r.molestia={zona:z, nivel:(n>0?Math.min(10,n):0)}; }
+    guardar(inm); if(inm){ pintarDia(); pintarMolestias(); }
+  };
+  if(mz) mz.addEventListener("change",()=>guardarM(true));
+  if(mn){ mn.addEventListener("input",()=>guardarM(false)); mn.addEventListener("blur",()=>guardarM(true)); }
+}
+
+/* ============ Gráficas ============ */
+function graficaCarrera(){
+  const An=340,Al=140,mb=22,mt=8,ml=30;
+  const kms=CORRER.map(s=>s[1]*KM_POR_MIN);
+  const max=Math.max.apply(null,kms);
+  const an=(An-ml-6)/kms.length;
+  let g="";
+  kms.forEach((k,i)=>{
+    const h=(k/max)*(Al-mt-mb), hecho=i<estado.carrerasHechas;
+    g+='<rect x="'+(ml+i*an+1).toFixed(1)+'" y="'+(Al-mb-h).toFixed(1)+'" width="'+(an-2).toFixed(1)+'" height="'+h.toFixed(1)+
+       '" rx="1.5" fill="'+(hecho?"var(--carrera)":"var(--linea)")+'"'+(hecho?"":' opacity="0.6"')+'><title>Sesión '+(i+1)+': '+num(k)+' km</title></rect>';
+    if((i+1)%5===0||i===0) g+='<text x="'+(ml+i*an+an/2).toFixed(1)+'" y="'+(Al-6)+'" class="eje" text-anchor="middle">'+(i+1)+'</text>';
+  });
+  return '<svg viewBox="0 0 '+An+' '+Al+'" class="grafica" role="img" aria-label="Kilómetros por sesión">'+
+    '<text x="0" y="'+(mt+9)+'" class="eje">'+num(max)+'</text><text x="0" y="'+(Al-mb)+'" class="eje">0</text>'+
+    '<line x1="'+ml+'" y1="'+(Al-mb)+'" x2="'+An+'" y2="'+(Al-mb)+'" stroke="var(--linea)"/>'+g+'</svg>';
+}
+function serieEjercicio(id,it){
+  return Object.keys(estado.registros).sort().map(f=>{
+    const e=estado.registros[f].gim&&estado.registros[f].gim[id];
+    if(!e) return null;
+    const val = metrica==="peso" ? (e.kg||0) : volumen(e,it);
+    return val>0 ? {f:f,v:val} : null;
+  }).filter(Boolean);
+}
+function graficaFuerza(id,it){
+  const h=serieEjercicio(id,it);
+  if(h.length<2) return null;
+  const An=340,Al=140,mb=22,mt=10,ml=36;
+  const vs=h.map(e=>e.v);
+  let max=Math.max.apply(null,vs), min=Math.min.apply(null,vs);
+  if(max===min){ max=max*1.1||1; min=Math.max(0,min*0.9); }
+  const x=i=> ml+(i/(h.length-1))*(An-ml-12);
+  const y=v=> Al-mb-((v-min)/(max-min))*(Al-mt-mb);
+  const linea=h.map((e,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(e.v).toFixed(1)).join(" ");
+  const col = metrica==="peso" ? "var(--fuerza)" : "var(--carrera)";
+  let pts="";
+  h.forEach((e,i)=>{ pts+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(e.v).toFixed(1)+'" r="4" fill="'+col+'"><title>'+num(e.v)+(metrica==="peso"?" kg":" kg totales")+' · '+fechaCorta(e.f)+'</title></circle>'; });
+  return '<svg viewBox="0 0 '+An+' '+Al+'" class="grafica" role="img" aria-label="Progresión">'+
+    '<line x1="'+ml+'" y1="'+(Al-mb)+'" x2="'+An+'" y2="'+(Al-mb)+'" stroke="var(--linea)"/>'+
+    '<path d="'+linea+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>'+pts+
+    '<text x="0" y="'+(mt+9)+'" class="eje">'+num(max)+'</text><text x="0" y="'+(Al-mb)+'" class="eje">'+num(min)+'</text>'+
+    '<text x="'+x(0).toFixed(1)+'" y="'+(Al-6)+'" class="eje">'+fechaCorta(h[0].f)+'</text>'+
+    '<text x="'+An+'" y="'+(Al-6)+'" class="eje" text-anchor="end">'+fechaCorta(h[h.length-1].f)+'</text></svg>';
+}
+function pintarGraficas(){
+  document.getElementById("g-carrera").innerHTML=graficaCarrera();
+  const hechos=CORRER.slice(0,estado.carrerasHechas).reduce((a,s)=>a+s[1]*KM_POR_MIN,0);
+  const total=CORRER.reduce((a,s)=>a+s[1]*KM_POR_MIN,0);
+  document.getElementById("g-carrera-txt").textContent=
+    num(hechos)+" km acumulados de "+num(total)+" que suma el plan. Las barras verdes ya están hechas.";
+
+  const sel=document.getElementById("sel-ejercicio");
+  if(!sel.options.length){
+    Object.keys(GIM).forEach(k=>{
+      const g=document.createElement("optgroup"); g.label=GIM[k].titulo;
+      GIM[k].items.forEach(it=>{ const o=document.createElement("option"); o.value=k+"|"+it[0]; o.textContent=it[0]; g.appendChild(o); });
+      sel.appendChild(g);
+    });
+    sel.onchange=pintarGraficas;
+  }
+  const id=sel.value||sel.options[0].value;
+  const clave=id.split("|")[0], nombre=id.split("|")[1];
+  const it=GIM[clave].items.filter(x=>x[0]===nombre)[0];
+  const svg=graficaFuerza(id,it);
+  const cf=document.getElementById("g-fuerza"), tf=document.getElementById("g-fuerza-txt");
+  if(svg){
+    cf.innerHTML=svg;
+    const h=serieEjercicio(id,it), d=h[h.length-1].v-h[0].v;
+    tf.textContent=(metrica==="peso"
+      ? (d>0?"+":"")+num(d)+" kg desde el "+fechaCorta(h[0].f)
+      : (d>0?"+":"")+num(d)+" kg de trabajo total por sesión desde el "+fechaCorta(h[0].f))+", en "+h.length+" registros.";
+  }else{
+    cf.innerHTML="";
+    tf.textContent = it[4]!=="reps" && metrica==="volumen"
+      ? "Este ejercicio no se mide en kilos, así que el volumen no aplica."
+      : "Hacen falta al menos dos días registrados para dibujar una línea.";
+  }
+}
+
+/* ============ Historial y molestias ============ */
+function pintarHistorial(){
+  const c=document.getElementById("historial"); let html="",hubo=false;
+  Object.keys(GIM).forEach(k=>{
+    const s=GIM[k];
+    const filas=s.items.map(it=>{
+      const id=k+"|"+it[0];
+      const h=Object.keys(estado.registros).sort().map(f=>{
+        const e=estado.registros[f].gim&&estado.registros[f].gim[id];
+        return e&&(e.kg>0||(e.series||[]).some(x=>x>0)) ? {f:f,e:e} : null;
+      }).filter(Boolean);
+      if(!h.length) return "";
+      hubo=true;
+      let delta="";
+      if(h.length>1 && h[0].e.kg>0 && h[h.length-1].e.kg>0){
+        const d=Math.round((h[h.length-1].e.kg-h[0].e.kg)*10)/10;
+        delta='<span class="delta '+(d>0?"sube":(d<0?"baja":""))+'">'+(d>0?"+":"")+num(d)+' kg</span>';
+      }
+      const pts=h.slice(-8).map(x=>'<span class="punto-hist"><b>'+(x.e.kg>0?num(x.e.kg):"—")+'</b>'+(textoSeries(x.e)||fechaCorta(x.f))+'</span>').join("");
+      return '<div class="hist-fila"><div class="hist-cab"><span>'+it[0]+'</span>'+delta+'</div><div class="hist-puntos">'+pts+'</div></div>';
+    }).join("");
+    if(filas) html+='<div class="lista-ref"><h3>'+s.titulo+'</h3>'+filas+'</div>';
+  });
+  c.innerHTML = hubo ? html : '<p class="nota">Todavía no hay nada registrado. En cuanto anotes el primer peso vas a ver acá la progresión de cada ejercicio.</p>';
+}
+function pintarMolestias(){
+  const c=document.getElementById("molestias");
+  const lista=Object.keys(estado.registros).sort().reverse()
+    .filter(f=>estado.registros[f].molestia&&estado.registros[f].molestia.zona)
+    .map(f=>({f:f,m:estado.registros[f].molestia}));
+  if(!lista.length){ c.innerHTML='<p class="nota">Sin molestias registradas. Anotalas en la tarjeta del día cuando aparezcan: un patrón repetido en la misma zona es información que en el momento no se percibe.</p>'; return; }
+  const conteo={};
+  lista.forEach(x=>{ conteo[x.m.zona]=(conteo[x.m.zona]||0)+1; });
+  let alerta="";
+  Object.keys(conteo).forEach(z=>{ if(conteo[z]>=3) alerta+='<div class="banda molestia"><strong>'+z+'</strong> aparece '+conteo[z]+' veces. Un patrón que se repite en la misma zona merece una consulta con un fisioterapeuta o médico del deporte, no más semanas de espera.</div>'; });
+  c.innerHTML=alerta+'<div class="hist-puntos" style="margin-top:10px">'+
+    lista.slice(0,20).map(x=>'<span class="punto-hist" style="min-width:74px"><b>'+(x.m.nivel||0)+'/10</b>'+x.m.zona+'<br>'+fechaCorta(x.f)+'</span>').join("")+'</div>';
+}
+function pintarReferencia(){
+  document.getElementById("ref-gimnasio").innerHTML=Object.keys(GIM).map(k=>{
+    const s=GIM[k];
+    return '<div class="lista-ref"><h3>'+s.titulo+'</h3><ul>'+
+      s.items.map(it=>'<li>'+it[0]+' <span>'+it[1]+' × '+(it[2]===it[3]?it[2]:it[2]+"-"+it[3])+'</span><span class="ej-nota">'+it[5]+'</span></li>').join("")+'</ul></div>';
+  }).join("");
+}
+function pintarRespaldo(){
+  const t=document.getElementById("respaldo");
+  if(t&&document.activeElement!==t) t.value=JSON.stringify(estado);
+  const d=document.getElementById("diagnostico");
+  d.innerHTML = hayAlmacen
+    ? '<strong style="color:var(--hecho)">Guardado automático activo.</strong> Tus datos viven en este teléfono y no salen de él. Copiá el respaldo una vez al mes y guardalo en Notas: si borrás la app o cambiás de teléfono, es lo único que los recupera.'
+    : '<strong style="color:var(--alerta)">El guardado automático no funciona en este visor.</strong> Motivo: '+motivoFallo+' Usá el respaldo de abajo para no perder nada.';
+}
+
+function pintarTodo(){ pintarNav(); pintarFranja(); pintarDescarga(); pintarDia(); pintarGraficas(); pintarHistorial(); pintarMolestias(); pintarRespaldo(); }
+
+/* ============ Arranque ============ */
+(async function(){
+  await cargar();
+  pintarReferencia(); pintarTodo();
+  if(!hayAlmacen){ aviso("No se puede guardar aquí — mirá Respaldo y diagnóstico",true); document.getElementById("det-respaldo").open=true; }
+
+  document.getElementById("btn-prev").onclick=()=>{ fechaActiva.setDate(fechaActiva.getDate()-7); pintarTodo(); };
+  document.getElementById("btn-next").onclick=()=>{ fechaActiva.setDate(fechaActiva.getDate()+7); pintarTodo(); };
+  document.getElementById("btn-hoy").onclick=()=>{ fechaActiva=new Date(); pintarTodo(); };
+
+  document.getElementById("btn-descarga").onclick=()=>{
+    const k=semanaK(fechaActiva);
+    estado.descargas=estado.descargas||[];
+    const i=estado.descargas.indexOf(k);
+    if(i>=0){ estado.descargas.splice(i,1); aviso("Semana normal"); }
+    else{ estado.descargas.push(k); estado.descargas.sort(); aviso("Semana marcada como descarga"); }
+    guardar(true); pintarTodo();
+  };
+
+  document.querySelectorAll("[data-metrica]").forEach(b=>{
+    b.onclick=()=>{
+      metrica=b.dataset.metrica;
+      document.querySelectorAll("[data-metrica]").forEach(o=>o.setAttribute("aria-pressed", o===b?"true":"false"));
+      pintarGraficas();
+    };
+  });
+
+  document.getElementById("t90").onclick=()=>arrancarTimer(90);
+  document.getElementById("t60").onclick=()=>arrancarTimer(60);
+  document.getElementById("tstop").onclick=()=>{ clearInterval(tmr); tmr=null; restante=0; pintarCuenta(); };
+
+  document.getElementById("btn-copiar").onclick=async()=>{
+    const t=document.getElementById("respaldo"); t.value=JSON.stringify(estado);
+    try{ await navigator.clipboard.writeText(t.value); aviso("Respaldo copiado"); }
+    catch(e){ t.select(); aviso("Seleccionado: copialo a mano"); }
+  };
+  document.getElementById("btn-restaurar").onclick=()=>{
+    const t=document.getElementById("respaldo");
+    try{
+      const n=JSON.parse(t.value);
+      if(!n||typeof n!=="object") throw new Error("formato");
+      estado=Object.assign({v:2,inicio:null,carrerasHechas:0,sesionesCorridas:[],registros:{},unidades:{},descargas:[],notas:""},n);
+      guardar(true); pintarTodo(); aviso("Respaldo restaurado");
+    }catch(e){ aviso("Ese texto no es un respaldo válido"); }
+  };
+})();
+
+/* ============ Funcionamiento sin conexión ============ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{ /* sin conexión la primera vez: se reintenta al abrir */ });
+  });
+}
+</script>
+</body>
+</html>
